@@ -1,12 +1,20 @@
 import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, SendMode } from '@ton/core';
+import { Coins } from '@ton/sandbox/dist/config/config.tlb-gen';
 
 export type AccomuletedWalletConfig = {
     id: number;
-    counter: number;
+    recieverAddress: Address;
+    creatorAddress: Address;
+    goal: Coins
 };
 
 export function accomuletedWalletConfigToCell(config: AccomuletedWalletConfig): Cell {
-    return beginCell().storeUint(config.id, 32).storeUint(config.counter, 32).endCell();
+    return beginCell()
+        .storeUint(config.id, 32)
+        .storeCoins(config.goal.grams)
+        .storeAddress(config.recieverAddress)
+        .storeAddress(config.creatorAddress)
+        .endCell();
 }
 
 export const Opcodes = {
@@ -15,7 +23,7 @@ export const Opcodes = {
 };
 
 export class AccomuletedWallet implements Contract {
-    constructor(readonly address: Address, readonly init?: { code: Cell; data: Cell }) {}
+    constructor(readonly address: Address, readonly init?: { code: Cell; data: Cell }) { }
 
     static createFromAddress(address: Address) {
         return new AccomuletedWallet(address);

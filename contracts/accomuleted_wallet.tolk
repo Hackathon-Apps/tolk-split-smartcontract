@@ -1,75 +1,88 @@
 tolk 1.0
 
-// this struct defines storage layout of the contract
 struct Storage {
-    id: uint32  // required to allow multiple independent counter instances, since the contract address depends on its initial state
-    counter: uint32 // the current counter value
+    id: uint32
+    goal: coins
+    recieverAddress: address
+    creatorAddress: address
 }
 
-// load contract data from the persistent storage
 fun Storage.load() {
-    return Storage.fromCell(contract.getData())
+    return Storage.fromCell(contract.getData());
 }
 
-// save contract data into the persistent storage
 fun Storage.save(self) {
-    contract.setData(self.toCell())
+    contract.setData(self.toCell());
 }
 
-// the struct uses a 32-bit opcode prefix for message identification
-struct (0x7e8764ef) IncreaseCounter {
-    queryId: uint64  // query id, typically included in messages
-    increaseBy: uint32
-}
-
-struct (0x3a752f06) ResetCounter {
+struct (0xCF4D2AC0) Contribution {
     queryId: uint64
 }
 
-// using unions to represent available messages
-// this allows processing them with pattern matching
-type AllowedMessage = IncreaseCounter | ResetCounter
+struct (0x61A586E5) Refund {
+    queryId: uint64
+}
 
-// the main entrypoint: called when a contract receives an message from other contracts
+type AllowedMessage = Contribution | Refund
+
 fun onInternalMessage(in: InMessage) {
-    // use `lazy` to defer loading fields until they are accessed
     val msg = lazy AllowedMessage.fromSlice(in.body);
+    var storage = lazy Storage.load();
 
     match (msg) {
-        IncreaseCounter => {
-            // load contract storage lazily (efficient for large or partial reads/updates)
-            var storage = lazy Storage.load();
-
-            storage.counter += msg.increaseBy;
-            storage.save();
+        Contribution => {
+            val totalCoins = contract.getOriginalBalance() + in.valueCoins;
+            if (storage.goal <= contract.getOriginalBalance() + in.valueCoins) {
+                val payReciever = createMessage({
+                    value: storage.goal,
+                    bounce: false,
+                    dest: storage.recieverAddress,
+                });
+                payReciever.send(SEND_MODE_REGULAR);
+                val excess = contract.getOriginalBalance() + in.valueCoins - storage.goal;
+                if (excess > 0) {
+                    val payCreator = createMessage({
+                        value: 0,
+                        bounce: false,
+                        dest: storage.creatorAddress,
+                    });
+                    payCreator.send(SEND_MODE_CARRY_ALL_BALANCE);
+                }
+            }
+            return;
         }
-
-        ResetCounter => {
-            var storage = lazy Storage.load();
-
-            storage.counter = 0;
-            storage.save();
+        Refund => {
+            val payCreator = createMessage({
+                value: 0,
+                bounce: false,
+                dest: storage.creatorAddress,
+            });
+            payCreator.send(SEND_MODE_CARRY_ALL_BALANCE);
         }
-
         else => {
-            // ignore empty messages, "wrong opcode" for others
-            assert (in.body.isEmpty()) throw 0xFFFF
+            assert (in.body.isEmpty()) throw 0xFFFF;
         }
     }
 }
 
-// a handler for bounced messages (not used here, may be ommited)
-fun onBouncedMessage(in: InMessageBounced) {
-}
+fun onBouncedMessage(in: InMessageBounced) {}
 
-// get methods are a means to conveniently read contract data using, for example, HTTP APIs
-// note that unlike in many other smart contract VMs, get methods cannot be called by other contracts
-get fun currentCounter(): int {
-    val storage = lazy Storage.load();
-    return storage.counter;
-}
-
-get fun initialId(): int {
+get fun getId(): uint32 {
     val storage = lazy Storage.load();
     return storage.id;
+}
+
+get fun goal(): coins {
+    val storage = lazy Storage.load();
+    return storage.goal;
+}
+
+get fun recieverAddress(): address {
+    val storage = lazy Storage.load();
+    return storage.recieverAddress;
+}
+
+get fun creatorAddress(): address {
+    val storage = lazy Storage.load();
+    return storage.creatorAddress!;
 }

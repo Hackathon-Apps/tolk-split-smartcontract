@@ -1,4 +1,4 @@
-import { toNano } from '@ton/core';
+import { Address, toNano } from '@ton/core';
 import { AccomuletedWallet } from '../wrappers/AccomuletedWallet';
 import { compile, NetworkProvider } from '@ton/blueprint';
 
@@ -7,7 +7,9 @@ export async function run(provider: NetworkProvider) {
         AccomuletedWallet.createFromConfig(
             {
                 id: Math.floor(Math.random() * 10000),
-                counter: 0,
+                goal: { kind: 'Coins', grams: toNano('0.1') },
+                recieverAddress: Address.parse("UQB3pqex4lL1xQEW366-51VnMpP3fDYQe1DM3ij4qdOT8uxT"),
+                creatorAddress: provider.sender().address!,
             },
             await compile('AccomuletedWallet')
         )
