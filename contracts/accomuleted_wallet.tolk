@@ -32,15 +32,15 @@ fun onInternalMessage(in: InMessage) {
     match (msg) {
         Contribution => {
             val totalCoins = contract.getOriginalBalance() + in.valueCoins;
-            if (storage.goal <= contract.getOriginalBalance() + in.valueCoins) {
+            if (storage.goal <= totalCoins) {
                 val payReciever = createMessage({
                     value: storage.goal,
                     bounce: false,
                     dest: storage.recieverAddress,
                 });
                 payReciever.send(SEND_MODE_REGULAR);
-                val excess = contract.getOriginalBalance() + in.valueCoins - storage.goal;
-                if (excess > 0) {
+                val excessCoins = totalCoins - storage.goal;
+                if (excessCoins > 0) {
                     val payCreator = createMessage({
                         value: 0,
                         bounce: false,
