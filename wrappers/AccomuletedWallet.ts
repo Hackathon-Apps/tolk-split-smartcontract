@@ -87,7 +87,7 @@ export class AccomuletedWallet implements Contract {
     }
 
     async getID(provider: ContractProvider) {
-        const result = await provider.get('initialId', []);
+        const result = await provider.get('getId', []);
         return result.stack.readNumber();
     }
 }

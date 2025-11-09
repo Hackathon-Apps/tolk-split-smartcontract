@@ -31,7 +31,7 @@ fun onInternalMessage(in: InMessage) {
 
     match (msg) {
         Contribution => {
-            val totalCoins = contract.getOriginalBalance() + in.valueCoins;
+            val totalCoins = contract.getOriginalBalance();
             if (storage.goal <= totalCoins) {
                 val payReciever = createMessage({
                     value: storage.goal,
@@ -58,9 +58,10 @@ fun onInternalMessage(in: InMessage) {
                 dest: storage.creatorAddress,
             });
             payCreator.send(SEND_MODE_CARRY_ALL_BALANCE);
+            return;
         }
         else => {
-            assert (in.body.isEmpty()) throw 0xFFFF;
+            return;
         }
     }
 }
