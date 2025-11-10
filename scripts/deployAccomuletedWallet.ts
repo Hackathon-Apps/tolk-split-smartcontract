@@ -7,9 +7,10 @@ export async function run(provider: NetworkProvider) {
         AccomuletedWallet.createFromConfig(
             {
                 id: Math.floor(Math.random() * 10000),
-                goal: { kind: 'Coins', grams: toNano('0.1') },
+                goal: { kind: 'Coins', grams: toNano('0.5') },
                 recieverAddress: Address.parse("UQB3pqex4lL1xQEW366-51VnMpP3fDYQe1DM3ij4qdOT8uxT"),
                 creatorAddress: provider.sender().address!,
+                contributions: null,
             },
             await compile('AccomuletedWallet')
         )
@@ -22,7 +23,7 @@ export async function run(provider: NetworkProvider) {
 
     await provider.sender().send({
         to: accomuletedWallet.address,
-        value: toNano('0.11'),
+        value: toNano('0.1'),
         init: accomuletedWallet.init, // StateInit (code + data)
         body: contributionBody,
         sendMode: SendMode.PAY_GAS_SEPARATELY,

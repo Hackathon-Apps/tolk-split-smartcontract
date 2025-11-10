@@ -1,3 +1,4 @@
+import { Null } from '@tact-lang/compiler';
 import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, SendMode } from '@ton/core';
 import { Coins } from '@ton/sandbox/dist/config/config.tlb-gen';
 
@@ -6,6 +7,7 @@ export type AccomuletedWalletConfig = {
     recieverAddress: Address;
     creatorAddress: Address;
     goal: Coins
+    contributions: null;
 };
 
 export function accomuletedWalletConfigToCell(config: AccomuletedWalletConfig): Cell {

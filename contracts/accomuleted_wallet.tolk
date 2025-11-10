@@ -1,10 +1,13 @@
 tolk 1.0
 
+const REFUND_BATCH : int = 32
+
 struct Storage {
     id: uint32
     goal: coins
     recieverAddress: address
     creatorAddress: address
+    contributions: map<address, coins>
 }
 
 fun Storage.load() {
@@ -23,7 +26,22 @@ struct (0x61A586E5) Refund {
     queryId: uint64
 }
 
-type AllowedMessage = Contribution | Refund
+struct (0xAAAAAAAA) TestReturn {
+    queryId: uint64
+}
+
+type AllowedMessage = Contribution | Refund | TestReturn
+
+fun addContribution(storage: Storage, address: address, amount: coins) {
+    var contribution = storage.contributions.get(address);
+    val value = contribution.isFound ? contribution.loadValue() + amount : amount;
+    if (contribution.isFound == false) {
+        storage.contributions.addIfNotExists(address, value);
+    } else {
+        storage.contributions.set(address, value);
+    }
+    Storage.save(storage);
+}
 
 fun onInternalMessage(in: InMessage) {
     val msg = lazy AllowedMessage.fromSlice(in.body);
@@ -49,16 +67,36 @@ fun onInternalMessage(in: InMessage) {
                     payCreator.send(SEND_MODE_CARRY_ALL_BALANCE);
                 }
             }
+            addContribution(storage, in.senderAddress, in.valueCoins);
             return;
         }
         Refund => {
-            val payCreator = createMessage({
+            var count: int = 0;
+            var iterCurrent = storage.contributions.findFirst();
+
+            while (count < REFUND_BATCH && iterCurrent.isFound == true) {
+                val contributorAddress = iterCurrent.getKey();
+                val contributionAmount = iterCurrent.loadValue();
+                val payRefund = createMessage({
+                    value: contributionAmount,
+                    bounce: false,
+                    dest: contributorAddress,
+                });
+                payRefund.send(SEND_MODE_REGULAR);
+                count = count + 1;
+                iterCurrent = storage.contributions.iterateNext(iterCurrent);
+            }
+
+            Storage.save(storage);
+            return;
+        }
+        TestReturn => {
+            val payRefund = createMessage({
                 value: 0,
                 bounce: false,
-                dest: storage.creatorAddress,
+                dest: in.senderAddress,
             });
-            payCreator.send(SEND_MODE_CARRY_ALL_BALANCE);
-            return;
+            payRefund.send(SEND_MODE_CARRY_ALL_BALANCE);
         }
         else => {
             return;
