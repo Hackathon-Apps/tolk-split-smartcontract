@@ -7,6 +7,7 @@ export type AccomuletedWalletConfig = {
     recieverAddress: Address;
     creatorAddress: Address;
     goal: Coins
+    feeCollectorAddress: Address;
     contributions: null;
 };
 
@@ -16,6 +17,7 @@ export function accomuletedWalletConfigToCell(config: AccomuletedWalletConfig): 
         .storeCoins(config.goal.grams)
         .storeAddress(config.recieverAddress)
         .storeAddress(config.creatorAddress)
+        .storeAddress(config.feeCollectorAddress)
         .endCell();
 }
 

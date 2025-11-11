@@ -10,6 +10,7 @@ export async function run(provider: NetworkProvider) {
                 goal: { kind: 'Coins', grams: toNano('0.5') },
                 recieverAddress: Address.parse("UQB3pqex4lL1xQEW366-51VnMpP3fDYQe1DM3ij4qdOT8uxT"),
                 creatorAddress: provider.sender().address!,
+                feeCollectorAddress: provider.sender().address!,
                 contributions: null,
             },
             await compile('AccomuletedWallet')
