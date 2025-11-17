@@ -1,3 +1,4 @@
+import { Null } from '@tact-lang/compiler';
 import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, SendMode } from '@ton/core';
 import { Coins } from '@ton/sandbox/dist/config/config.tlb-gen';
 
@@ -6,6 +7,8 @@ export type AccomuletedWalletConfig = {
     recieverAddress: Address;
     creatorAddress: Address;
     goal: Coins
+    feeCollectorAddress: Address;
+    contributions: null;
 };
 
 export function accomuletedWalletConfigToCell(config: AccomuletedWalletConfig): Cell {
@@ -14,6 +17,7 @@ export function accomuletedWalletConfigToCell(config: AccomuletedWalletConfig): 
         .storeCoins(config.goal.grams)
         .storeAddress(config.recieverAddress)
         .storeAddress(config.creatorAddress)
+        .storeAddress(config.feeCollectorAddress)
         .endCell();
 }
 
@@ -87,7 +91,7 @@ export class AccomuletedWallet implements Contract {
     }
 
     async getID(provider: ContractProvider) {
-        const result = await provider.get('initialId', []);
+        const result = await provider.get('getId', []);
         return result.stack.readNumber();
     }
 }
